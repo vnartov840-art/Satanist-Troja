@@ -7,7 +7,8 @@ import time
 from datetime import datetime
 import os
 
-app = Flask(__name__)
+# ФИКС: указываем instance_path вручную
+app = Flask(__name__, instance_path='/tmp/instance')
 
 DB_PATH = '/tmp/devices.db'
 
@@ -54,19 +55,9 @@ def update_device():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     
-    # Проверяем, было ли устройство онлайн
-    c.execute('SELECT status FROM devices WHERE id = ?', (data['id'],))
-    row = c.fetchone()
-    prev_status = row[0] if row else None
-    
-    # Если пришло "offline" — проверяем, не было ли онлайн 5 минут назад
-    if data.get('status') == 'offline' and prev_status == 'online':
-        # Оставляем онлайн ещё 5 минут (чтобы не моргало)
-        data['status'] = 'online'
-    
     c.execute('''INSERT OR REPLACE INTO devices (id, name, model, status, battery, ip, last_seen)
                  VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)''',
-              (data['id'], data['name'], data['model'], data['status'], data.get('battery', 0), data.get('ip', '')))
+              (data['id'], data['name'], data['model'], data.get('status', 'online'), data.get('battery', 0), data.get('ip', '')))
     conn.commit()
     conn.close()
     return 'OK'
@@ -77,38 +68,28 @@ def send_command():
     device_id = data.get('deviceId')
     command = data.get('command')
     
-    # Здесь можно сохранить команду в очередь или отправить через Telegram бота
-    # Пока просто логируем
-    print(f"📩 Команда для {device_id}: {command}")
-    
-    # Отправляем команду через Telegram бота (опционально)
     try:
-        import requests
         token = "8876390846:AAELEYzUJAUpH3ysUeOO9IdMMBy3mKYzxig"
         admin_id = "6178711912"
         text = f"📩 КОМАНДА ДЛЯ УСТРОЙСТВА\nID: {device_id}\nКоманда: {command}"
         requests.post(f"https://api.telegram.org/bot{token}/sendMessage",
-                      json={"chat_id": admin_id, "text": text})
+                      json={"chat_id": admin_id, "text": text}, timeout=5)
     except:
         pass
     
     return jsonify({"status": "ok"})
 
-# ===== АВТО-ПИНГ (чтобы Render не уснул) =====
 def keep_alive():
-    """Каждые 10 минут стучит сам себе, чтобы Render не усыплял"""
     with app.app_context():
         while True:
             try:
-                # Стучим сами себе
                 url = f"http://localhost:{os.environ.get('PORT', 5000)}/api/devices"
                 requests.get(url, timeout=5)
                 print(f"✅ Пинг в {datetime.now()}")
             except:
                 pass
-            time.sleep(600)  # 10 минут
+            time.sleep(600)
 
-# Запускаем поток с пингом
 threading.Thread(target=keep_alive, daemon=True).start()
 
 if __name__ == '__main__':
