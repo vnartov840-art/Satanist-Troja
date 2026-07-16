@@ -7,7 +7,6 @@ import time
 from datetime import datetime
 import os
 
-# ФИКС: указываем instance_path вручную
 app = Flask(__name__, instance_path='/tmp/instance')
 
 DB_PATH = '/tmp/devices.db'
@@ -68,6 +67,7 @@ def send_command():
     device_id = data.get('deviceId')
     command = data.get('command')
     
+    # Отправляем команду в Telegram бота
     try:
         token = "8876390846:AAELEYzUJAUpH3ysUeOO9IdMMBy3mKYzxig"
         admin_id = "6178711912"
@@ -79,6 +79,7 @@ def send_command():
     
     return jsonify({"status": "ok"})
 
+# Авто-пинг
 def keep_alive():
     with app.app_context():
         while True:
