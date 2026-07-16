@@ -76,36 +76,37 @@ def update_device():
     conn.close()
     return 'OK'
 
-# ===== ОЧЕРЕДЬ КОМАНД =====
 @app.route('/api/command', methods=['POST'])
 def add_command():
     data = request.json
     device_id = data.get('deviceId')
     command = data.get('command')
+    data2 = data.get('data')
     
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('INSERT INTO commands (device_id, command) VALUES (?, ?)', (device_id, command))
+    if data2:
+        c.execute('INSERT INTO commands (device_id, command, data) VALUES (?, ?, ?)', (device_id, command, data2))
+    else:
+        c.execute('INSERT INTO commands (device_id, command) VALUES (?, ?)', (device_id, command))
     conn.commit()
     conn.close()
-    
     return jsonify({'status': 'ok'})
 
 @app.route('/api/poll/<device_id>')
 def poll_commands(device_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('SELECT id, command FROM commands WHERE device_id = ? AND status = "pending" ORDER BY id LIMIT 1', (device_id,))
+    c.execute('SELECT id, command, data FROM commands WHERE device_id = ? AND status = "pending" ORDER BY id LIMIT 1', (device_id,))
     row = c.fetchone()
     if row:
         c.execute('UPDATE commands SET status = "sent" WHERE id = ?', (row[0],))
         conn.commit()
         conn.close()
-        return jsonify({'command': row[1]})
+        return jsonify({'command': row[1], 'data': row[2] if len(row) > 2 else None})
     conn.close()
     return jsonify({'command': None})
 
-# ===== ЗАГРУЗКА ФАЙЛОВ =====
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     data = request.json
@@ -141,7 +142,15 @@ def download_file(device_id, filename):
             pass
     return 'File not found', 404
 
-# ===== АВТОМАТИЧЕСКИЙ ПЕРЕВОД В ОФФЛАЙН =====
+@app.route('/api/files/<device_id>')
+def get_files(device_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT filename, created_at FROM files WHERE device_id = ? ORDER BY id DESC', (device_id,))
+    files = [{'filename': row[0], 'created_at': row[1]} for row in c.fetchall()]
+    conn.close()
+    return jsonify(files)
+
 def check_offline():
     with app.app_context():
         while True:
@@ -161,7 +170,6 @@ def check_offline():
 
 threading.Thread(target=check_offline, daemon=True).start()
 
-# ===== АВТО-ПИНГ =====
 def keep_alive():
     with app.app_context():
         while True:
