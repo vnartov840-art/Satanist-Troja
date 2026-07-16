@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_file
 import sqlite3
 import json
 import requests
@@ -6,10 +6,14 @@ import threading
 import time
 from datetime import datetime, timedelta
 import os
+import io
 
 app = Flask(__name__, instance_path='/tmp/instance')
 
 DB_PATH = '/tmp/devices.db'
+FILES_DIR = '/tmp/files'
+
+os.makedirs(FILES_DIR, exist_ok=True)
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -53,7 +57,6 @@ def update_device():
     data = request.json
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    
     c.execute('''INSERT OR REPLACE INTO devices (id, name, model, status, battery, ip, last_seen)
                  VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)''',
               (data['id'], data['name'], data['model'], 'online', data.get('battery', 0), data.get('ip', '')))
@@ -70,22 +73,20 @@ def send_command():
     try:
         token = "8876390846:AAELEYzUJAUpH3ysUeOO9IdMMBy3mKYzxig"
         admin_id = "6178711912"
-        text = f"📩 КОМАНДА ДЛЯ УСТРОЙСТВА\nID: {device_id}\nКоманда: {command}"
+        text = f"📩 КОМАНДА\nID: {device_id}\nКоманда: {command}"
         requests.post(f"https://api.telegram.org/bot{token}/sendMessage",
                       json={"chat_id": admin_id, "text": text}, timeout=5)
-    except:
-        pass
-    
-    return jsonify({"status": "ok"})
+        return jsonify({"status": "ok", "message": "Команда отправлена"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
-# ===== АВТОМАТИЧЕСКИЙ ПЕРЕВОД В ОФФЛАЙН (НО НЕ УДАЛЕНИЕ) =====
+# ===== АВТОМАТИЧЕСКИЙ ПЕРЕВОД В ОФФЛАЙН =====
 def check_offline():
     with app.app_context():
         while True:
             try:
                 conn = sqlite3.connect(DB_PATH)
                 c = conn.cursor()
-                # Если устройство не обновлялось больше 5 минут → оффлайн
                 five_min_ago = datetime.now() - timedelta(minutes=5)
                 c.execute('''UPDATE devices 
                              SET status = 'offline' 
@@ -99,7 +100,7 @@ def check_offline():
 
 threading.Thread(target=check_offline, daemon=True).start()
 
-# ===== АВТО-ПИНГ (Render не уснёт) =====
+# ===== АВТО-ПИНГ =====
 def keep_alive():
     with app.app_context():
         while True:
